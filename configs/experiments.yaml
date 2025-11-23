@@ -1,0 +1,86 @@
+# Experiment configurations
+# Define experiments to run for profiling
+
+# Global settings
+trace_output_dir: "./traces"
+results_dir: "./results"
+enable_profiling: true
+
+# Model configurations (reference to models.yaml)
+models_config: "./configs/models.yaml"
+
+# Experiment list
+experiments:
+  # Baseline: No parallelism
+  - name: "baseline_deepseek_v2_lite"
+    model: "deepseek-v2-lite"
+    parallelism:
+      strategy: "none"
+    batch_size: 1
+    sequence_length: 2048
+    num_tokens: 100
+    description: "Baseline inference without parallelism"
+  
+  # Tensor parallelism experiments
+  - name: "tp2_deepseek_v2_lite"
+    model: "deepseek-v2-lite"
+    parallelism:
+      strategy: "tensor"
+      tp_size: 2
+    batch_size: 1
+    sequence_length: 2048
+    num_tokens: 100
+    description: "Tensor parallelism with TP size 2"
+  
+  - name: "tp4_deepseek_v2_lite"
+    model: "deepseek-v2-lite"
+    parallelism:
+      strategy: "tensor"
+      tp_size: 4
+    batch_size: 1
+    sequence_length: 2048
+    num_tokens: 100
+    description: "Tensor parallelism with TP size 4"
+  
+  # Sequence parallelism experiments
+  - name: "seq2_deepseek_v2_lite"
+    model: "deepseek-v2-lite"
+    parallelism:
+      strategy: "sequence"
+      seq_parallel_size: 2
+    batch_size: 1
+    sequence_length: 2048
+    num_tokens: 100
+    description: "Sequence parallelism with size 2"
+  
+  # Pipeline parallelism experiments
+  - name: "pp2_deepseek_v2_lite"
+    model: "deepseek_v2_lite"
+    parallelism:
+      strategy: "pipeline"
+      pp_size: 2
+    batch_size: 1
+    sequence_length: 2048
+    num_tokens: 100
+    description: "Pipeline parallelism with PP size 2"
+  
+  # Larger model experiments
+  - name: "baseline_qwen_32b"
+    model: "qwen-32b"
+    parallelism:
+      strategy: "none"
+    batch_size: 1
+    sequence_length: 2048
+    num_tokens: 50
+    description: "Baseline for larger Qwen 32B model"
+  
+  - name: "tp4_qwen_32b"
+    model: "qwen-32b"
+    parallelism:
+      strategy: "tensor"
+      tp_size: 4
+    batch_size: 1
+    sequence_length: 2048
+    num_tokens: 50
+    description: "Qwen 32B with tensor parallelism"
+

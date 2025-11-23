@@ -1,0 +1,32 @@
+https://github.com/cornell-sysphotonics/ccl-bench
+
+In there, we defined a very high-level framework that helps you structure your profiling effort. It includes how you should perform profiling, what is the standard input and output for your tools, and how you should present your profiled workloads (through workload cards).
+
+Again, this is just a very high-level pipeline that could be scaled and will be helpful in presenting the results to the community. For your projects, please try to follow this structure and align your implementations accordingly.
+
+
+Our topic - 
+
+Study the LLM communication pattern/scheduling/efficiency across different parallelism using TorchXLA [inference] on Google TPU
+Same as project 1 but using TPU
+
+Project 1 for reference - 
+
+Study the LLM communication pattern/scheduling/efficiency across different parallelism using TorchTitan [training] on Perlmutter
+Objective:
+Understand the communication pattern, scheduling behavior, and communication efficiency in different workloads with hybrid parallelism.
+Gain experience on deploying large-scale training workloads.
+Example deliverables:
+Execute distributed ML workloads on Perlmutter. Select at least 3 from benchmark workloads listed in CS5470 Project list They should be executable using TorchTitan.
+Design execution plans, such as TP, DP, PP size.
+Design metrics to reflect communication pattern, scheduling behavior, and communication efficiency.
+Perform communication profiling, label communication kernel, collect communication kernel data for data parallelism, tensor parallelism, pipeline parallelism, expert parallelism. Collect traces in both nsys and Torch profiling format.
+Build a pipeline to classify traffic in different parallelism
+Analyze and report the profiled result based on the designed metrics, e.g., traffic interval (between one parallelism and across parallelisms), traffic volume, traffic matrix, etc., using various tools: SQL, matplotlib, etc.
+Resources:
+TopoOpt motivation section: https://www.usenix.org/system/files/nsdi23-wang-weiyang.pdf
+Cassini background section: https://www.usenix.org/system/files/nsdi24spring_prepub_rajasekaran.pdf
+Opus motivation section: https://arxiv.org/pdf/2507.08119
+https://arxiv.org/pdf/2507.14392
+
+
