@@ -55,19 +55,41 @@ def main():
     
     # Check available devices
     print("\n1. Checking available devices...")
-    devices = jax.devices()
-    print(f"   Found {len(devices)} device(s):")
-    for i, device in enumerate(devices):
-        print(f"   Device {i}: {device}")
-        print(f"      Platform: {device.platform}")
-        print(f"      Device ID: {device.id}")
-    
-    # Check if TPU is available
-    tpu_devices = [d for d in devices if d.platform == 'tpu']
-    if tpu_devices:
-        print(f"\n   ✅ TPU devices found: {len(tpu_devices)}")
-    else:
-        print(f"\n   ⚠️  No TPU devices found. Using: {devices[0].platform}")
+    try:
+        devices = jax.devices()
+        print(f"   Found {len(devices)} device(s):")
+        for i, device in enumerate(devices):
+            print(f"   Device {i}: {device}")
+            print(f"      Platform: {device.platform}")
+            print(f"      Device ID: {device.id}")
+        
+        # Check if TPU is available
+        tpu_devices = [d for d in devices if d.platform == 'tpu']
+        if tpu_devices:
+            print(f"\n   ✅ TPU devices found: {len(tpu_devices)}")
+        else:
+            print(f"\n   ⚠️  No TPU devices found. Using: {devices[0].platform}")
+    except RuntimeError as e:
+        print(f"   ❌ Error detecting TPU: {e}")
+        print("\n   Trying alternative initialization methods...")
+        
+        # Try with empty JAX_PLATFORMS to auto-detect
+        import os
+        os.environ['JAX_PLATFORMS'] = ''
+        jax.config.update('jax_platform_name', '')
+        
+        try:
+            devices = jax.devices()
+            print(f"   ✅ Found {len(devices)} device(s) with auto-detection")
+            for i, device in enumerate(devices):
+                print(f"   Device {i}: {device} (Platform: {device.platform})")
+        except Exception as e2:
+            print(f"   ❌ Still failed: {e2}")
+            print("\n   Troubleshooting:")
+            print("   1. Wait 1-2 minutes for TPU to fully initialize")
+            print("   2. Try: export JAX_PLATFORMS=''")
+            print("   3. Check TPU is running: gcloud compute tpus tpu-vm describe my-tpu-v6e --zone=us-east1-d")
+            return
     
     # Create model
     print("\n2. Creating MLP model...")
