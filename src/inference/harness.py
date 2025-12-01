@@ -30,24 +30,38 @@ class InferenceHarness:
     
     def __init__(self, config: Dict):
         self.config = config
-        # Initialize XLA device - use newer API
+        # Initialize XLA device - try multiple methods for v6e compatibility
+        self.device = None
+        
+        # Method 1: Try getting supported devices first
         try:
-            # Try the newer torch_xla.device() API
-            self.device = torch_xla.device()
-            print(f"Using XLA device: {self.device}")
-        except RuntimeError as e:
-            print(f"Warning: Could not get XLA device: {e}")
-            print("This might mean the TPU is not fully initialized.")
-            print("Trying to wait and retry...")
-            import time
-            time.sleep(5)  # Wait a bit for TPU to initialize
+            devices = xm.get_xla_supported_devices()
+            if devices:
+                print(f"Found {len(devices)} XLA device(s): {devices}")
+                self.device = devices[0]
+                print(f"Using XLA device: {self.device}")
+            else:
+                raise RuntimeError("No XLA devices found")
+        except Exception as e1:
+            print(f"Method 1 failed: {e1}")
+            # Method 2: Try torch_xla.device()
             try:
                 self.device = torch_xla.device()
-                print(f"Successfully got XLA device after wait: {self.device}")
+                print(f"Using XLA device (method 2): {self.device}")
             except Exception as e2:
-                print(f"Still failed: {e2}")
-                print("Falling back to CPU for now (this won't use TPU)")
-                self.device = torch.device('cpu')
+                print(f"Method 2 failed: {e2}")
+                # Method 3: Try with explicit device index
+                try:
+                    import torch_xla.core.xla_model as xm
+                    self.device = xm.xla_device(0)
+                    print(f"Using XLA device (method 3): {self.device}")
+                except Exception as e3:
+                    print(f"All methods failed. Last error: {e3}")
+                    print("TPU topology detection failed. This is a known issue with v6e TPUs.")
+                    print("The TPU is READY but TorchXLA can't detect it.")
+                    print("Falling back to CPU (this won't use TPU hardware)")
+                    self.device = torch.device('cpu')
+        
         self.profiler = None
         self.trace_collector = TraceCollector(config.get('trace_output_dir', './traces'))
         
