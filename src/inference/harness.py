@@ -30,7 +30,24 @@ class InferenceHarness:
     
     def __init__(self, config: Dict):
         self.config = config
-        self.device = xm.xla_device()
+        # Initialize XLA device - use newer API
+        try:
+            # Try the newer torch_xla.device() API
+            self.device = torch_xla.device()
+            print(f"Using XLA device: {self.device}")
+        except RuntimeError as e:
+            print(f"Warning: Could not get XLA device: {e}")
+            print("This might mean the TPU is not fully initialized.")
+            print("Trying to wait and retry...")
+            import time
+            time.sleep(5)  # Wait a bit for TPU to initialize
+            try:
+                self.device = torch_xla.device()
+                print(f"Successfully got XLA device after wait: {self.device}")
+            except Exception as e2:
+                print(f"Still failed: {e2}")
+                print("Falling back to CPU for now (this won't use TPU)")
+                self.device = torch.device('cpu')
         self.profiler = None
         self.trace_collector = TraceCollector(config.get('trace_output_dir', './traces'))
         
