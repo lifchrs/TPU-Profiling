@@ -5,8 +5,6 @@ Parallelism strategies for LLM inference on TPUs using TorchXLA
 import torch
 import torch_xla
 import torch_xla.core.xla_model as xm
-import torch_xla.distributed.parallel_loader as pl
-from torch_xla.distributed import mesh_reduce, all_reduce
 from typing import Dict, Optional, Tuple
 import math
 
