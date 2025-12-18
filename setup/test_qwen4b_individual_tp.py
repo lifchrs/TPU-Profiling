@@ -1,14 +1,7 @@
 #!/usr/bin/env python3
 """
-Test Qwen/Qwen3-4B with individual TP sizes (1, 2, 4, 8)
-Each test runs independently with proper cleanup
-
-Usage:
-    python3 test_qwen4b_individual_tp.py 1    # Test TP=1 only
-    python3 test_qwen4b_individual_tp.py 2    # Test TP=2 only
-    python3 test_qwen4b_individual_tp.py 4    # Test TP=4 only
-    python3 test_qwen4b_individual_tp.py 8    # Test TP=8 only
-    python3 test_qwen4b_individual_tp.py all   # Test all TP sizes sequentially
+Test Qwen/Qwen3-4B individually with different TP sizes
+Tests TP=1, TP=2, TP=4, TP=8 one at a time with proper cleanup
 
 Run this inside the vLLM Docker container
 """
@@ -17,7 +10,7 @@ import os
 import sys
 import time
 import gc
-import argparse
+import json
 from datetime import datetime
 
 # Set environment variables BEFORE any imports
@@ -37,209 +30,202 @@ except ImportError as e:
 
 MODEL_NAME = "Qwen/Qwen3-4B"
 TP_SIZES = [1, 2, 4, 8]
+RESULTS_DIR = "results"
+TEST_PROMPT = "Hello, how are you?"
+NUM_TEST_TOKENS = 10
 
 
-def test_tp_size(tp_size: int, max_model_len: int = 2048) -> dict:
+def test_tp_size(tp_size: int) -> dict:
     """Test model with a specific TP size"""
-    print("=" * 80)
+    print("\n" + "=" * 80)
     print(f"Testing {MODEL_NAME} with TP={tp_size}")
     print("=" * 80)
-    print(f"\nTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print()
     
+    result = {
+        'model': MODEL_NAME,
+        'tp_size': tp_size,
+        'status': 'UNKNOWN',
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    llm = None
+    
     try:
-        # Check JAX devices before loading
-        print("Checking JAX devices...")
-        import jax
-        try:
-            devices = jax.devices()
-            print(f"  ✓ Found {len(devices)} JAX devices")
-            if len(devices) < tp_size:
-                print(f"  ⚠ Warning: Only {len(devices)} devices available, but TP={tp_size} requested")
-        except Exception as e:
-            print(f"  ⚠ Could not enumerate devices: {e}")
-        print()
-        
         # Load model
         print(f"Loading model with TP={tp_size}...")
         print("(This may take 2-3 minutes)")
         print()
         
-        start_time = time.time()
+        load_start = time.time()
         llm = LLM(
             model=MODEL_NAME,
             tensor_parallel_size=tp_size,
             dtype="bfloat16",
-            max_model_len=max_model_len,
+            max_model_len=2048,
             disable_log_stats=True,
             trust_remote_code=True
         )
-        load_time = time.time() - start_time
+        load_time = time.time() - load_start
         
-        print(f"✓ Model loaded in {load_time:.2f}s")
-        print()
+        print(f"✓ Model loaded successfully in {load_time:.2f}s")
+        result['load_time_seconds'] = load_time
         
         # Test generation
+        print()
         print("Testing generation...")
-        sampling_params = SamplingParams(max_tokens=20, temperature=0.7)
+        sampling_params = SamplingParams(max_tokens=NUM_TEST_TOKENS, temperature=0.7)
+        
         gen_start = time.time()
-        outputs = llm.generate(["Hello, how are you? Please explain machine learning briefly."], sampling_params=sampling_params)
+        outputs = llm.generate([TEST_PROMPT], sampling_params=sampling_params)
         gen_time = time.time() - gen_start
         
         generated_text = outputs[0].outputs[0].text
         num_tokens = len(outputs[0].outputs[0].token_ids)
         
-        print(f"✓ Generation successful!")
-        print(f"  Generated {num_tokens} tokens in {gen_time:.2f}s")
-        print(f"  Output: {generated_text[:150]}...")
+        print(f"✓ Generation successful in {gen_time:.2f}s")
+        print(f"  Generated {num_tokens} tokens")
+        print(f"  Output: {generated_text[:100]}")
+        
+        result['status'] = 'SUCCESS'
+        result['generation_time_seconds'] = gen_time
+        result['num_tokens_generated'] = num_tokens
+        result['generated_text'] = generated_text[:200]  # First 200 chars
+        
         print()
-        
-        result = {
-            'status': 'SUCCESS',
-            'tp_size': tp_size,
-            'load_time': load_time,
-            'gen_time': gen_time,
-            'num_tokens': num_tokens,
-            'generated_text': generated_text[:200]
-        }
-        
-        # Cleanup
-        print("Cleaning up...")
-        del llm
-        gc.collect()
-        print("✓ Cleanup complete")
-        print()
-        
-        # Wait a bit to ensure resources are released
-        print("Waiting 5 seconds for resource cleanup...")
-        time.sleep(5)
-        print()
-        
-        return result
+        print("=" * 80)
+        print(f"✓ SUCCESS: {MODEL_NAME} works with TP={tp_size}!")
+        print("=" * 80)
         
     except Exception as e:
         print()
         print("=" * 80)
-        print("✗ FAILED")
+        print(f"✗ FAILED: {MODEL_NAME} with TP={tp_size}")
         print("=" * 80)
         print(f"\nError: {e}")
         print()
-        print("Full traceback:")
-        import traceback
-        traceback.print_exc()
-        print()
         
-        return {
-            'status': 'FAILED',
-            'tp_size': tp_size,
-            'error': str(e)
-        }
+        result['status'] = 'FAILED'
+        result['error'] = str(e)
+        
+        # Print diagnostic info
+        error_str = str(e)
+        if "Device or resource busy" in error_str:
+            print("→ Device busy error - TPU devices may still be in use")
+        elif "AttributeError" in error_str and "coords" in error_str:
+            print("→ Device coordinate error - JAX can't access TPU device info")
+        elif "TPU initialization failed" in error_str:
+            print("→ TPU initialization failed - devices may not be available")
+        
+        import traceback
+        print("\nFull traceback:")
+        traceback.print_exc()
+    
+    finally:
+        # Cleanup
+        if llm is not None:
+            print()
+            print("Cleaning up model instance...")
+            del llm
+            gc.collect()
+            print("✓ Cleanup complete")
+            
+            # Wait a bit to ensure resources are released
+            print("Waiting 5 seconds for resource cleanup...")
+            time.sleep(5)
+    
+    return result
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Test Qwen/Qwen3-4B with individual TP sizes',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Test TP=1 only
-  python3 test_qwen4b_individual_tp.py 1
-  
-  # Test TP=4 only
-  python3 test_qwen4b_individual_tp.py 4
-  
-  # Test all TP sizes sequentially
-  python3 test_qwen4b_individual_tp.py all
-        """
-    )
-    
-    parser.add_argument('tp_size', type=str, nargs='?', default='all',
-                       help='TP size to test (1, 2, 4, 8, or "all" for sequential testing)')
-    
-    args = parser.parse_args()
-    
-    # Determine which TP sizes to test
-    if args.tp_size.lower() == 'all':
-        tp_sizes_to_test = TP_SIZES
-        print("=" * 80)
-        print("Testing Qwen/Qwen3-4B with ALL TP sizes sequentially")
-        print("=" * 80)
-        print(f"\nWill test: {TP_SIZES}")
-        print("Each test will run independently with cleanup between tests.")
-        print()
-    else:
-        try:
-            tp_size = int(args.tp_size)
-            if tp_size not in TP_SIZES:
-                print(f"✗ Invalid TP size: {tp_size}")
-                print(f"  Valid options: {TP_SIZES} or 'all'")
-                sys.exit(1)
-            tp_sizes_to_test = [tp_size]
-        except ValueError:
-            print(f"✗ Invalid argument: {args.tp_size}")
-            print(f"  Must be one of: {TP_SIZES} or 'all'")
-            sys.exit(1)
-    
-    # Run tests
-    results = {}
-    
-    for tp_size in tp_sizes_to_test:
-        result = test_tp_size(tp_size)
-        results[tp_size] = result
-        
-        if result['status'] == 'SUCCESS':
-            print("=" * 80)
-            print(f"✓ SUCCESS: TP={tp_size} works!")
-            print("=" * 80)
-        else:
-            print("=" * 80)
-            print(f"✗ FAILED: TP={tp_size}")
-            print("=" * 80)
-            
-            # If testing all and one fails, ask if user wants to continue
-            if len(tp_sizes_to_test) > 1:
-                print()
-                print("Continue with next TP size? (This test failed, but you can continue)")
-                print("Press Ctrl+C to stop, or wait 10 seconds to continue...")
-                try:
-                    time.sleep(10)
-                except KeyboardInterrupt:
-                    print("\nStopped by user")
-                    break
-        
-        print()
-        print()
-    
-    # Print summary
     print("=" * 80)
+    print("Individual TP Size Test for Qwen/Qwen3-4B")
+    print("=" * 80)
+    print(f"\nModel: {MODEL_NAME}")
+    print(f"TP sizes to test: {TP_SIZES}")
+    print(f"Test prompt: {TEST_PROMPT}")
+    print(f"Number of tokens: {NUM_TEST_TOKENS}")
+    print(f"\nTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print()
+    print("Note: Each test will be run individually with cleanup between tests")
+    print()
+    
+    # Create results directory
+    import pathlib
+    results_path = pathlib.Path(RESULTS_DIR)
+    results_path.mkdir(parents=True, exist_ok=True)
+    
+    all_results = []
+    
+    # Test each TP size individually
+    for tp_size in TP_SIZES:
+        result = test_tp_size(tp_size)
+        all_results.append(result)
+        
+        # Save individual result
+        result_file = results_path / f"qwen3_4b_tp{tp_size}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        with open(result_file, 'w') as f:
+            json.dump(result, f, indent=2)
+        print(f"\n✓ Result saved to: {result_file}")
+        
+        # If failed, ask if we should continue
+        if result['status'] == 'FAILED':
+            print()
+            print("⚠ Test failed. Options:")
+            print("  1. Continue to next TP size (recommended)")
+            print("  2. Exit and investigate")
+            print()
+            print("Continuing to next TP size in 3 seconds...")
+            time.sleep(3)
+    
+    # Print final summary
+    print("\n\n" + "=" * 80)
     print("FINAL SUMMARY")
     print("=" * 80)
     print()
     
-    successful = [tp for tp, r in results.items() if r['status'] == 'SUCCESS']
-    failed = [tp for tp, r in results.items() if r['status'] == 'FAILED']
+    successful = [r for r in all_results if r['status'] == 'SUCCESS']
+    failed = [r for r in all_results if r['status'] == 'FAILED']
+    
+    print(f"Total tests: {len(all_results)}")
+    print(f"Successful: {len(successful)}")
+    print(f"Failed: {len(failed)}")
+    print()
     
     if successful:
-        print(f"✓ Successful TP sizes ({len(successful)}):")
-        for tp in successful:
-            result = results[tp]
-            print(f"  • TP={tp}: Loaded in {result['load_time']:.2f}s, Generated {result['num_tokens']} tokens in {result['gen_time']:.2f}s")
-        print()
+        print("✓ Successful TP sizes:")
+        for r in successful:
+            load_time = r.get('load_time_seconds', 0)
+            print(f"  • TP={r['tp_size']}: Loaded in {load_time:.2f}s")
     
     if failed:
-        print(f"✗ Failed TP sizes ({len(failed)}):")
-        for tp in failed:
-            result = results[tp]
-            error = result.get('error', 'Unknown error')
-            print(f"  • TP={tp}: {error[:100]}")
-        print()
+        print("\n✗ Failed TP sizes:")
+        for r in failed:
+            error = r.get('error', 'Unknown error')
+            print(f"  • TP={r['tp_size']}: {error[:80]}")
     
-    # Exit code
-    if failed:
-        sys.exit(1)
-    else:
-        print("✓ All tests passed!")
-        sys.exit(0)
+    # Save summary
+    summary_file = results_path / f"qwen3_4b_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    summary = {
+        'model': MODEL_NAME,
+        'timestamp': datetime.now().isoformat(),
+        'results': all_results,
+        'summary': {
+            'total': len(all_results),
+            'successful': len(successful),
+            'failed': len(failed)
+        }
+    }
+    
+    with open(summary_file, 'w') as f:
+        json.dump(summary, f, indent=2)
+    
+    print()
+    print(f"✓ Summary saved to: {summary_file}")
+    print()
+    print("=" * 80)
+    print("Testing complete!")
+    print("=" * 80)
 
 
 if __name__ == '__main__':
