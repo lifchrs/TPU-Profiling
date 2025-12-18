@@ -1,0 +1,165 @@
+model 1 - https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct
+
+# Gated model: Login with a HF token with gated access permission
+hf auth login  Install from pip  Copy # Install vLLM from pip:
+pip install vllm    Copy # Load and run the model:
+vllm serve "meta-llama/Llama-3.1-8B-Instruct"    Copy # Call the server using curl:
+curl -X POST "http://localhost:8000/v1/chat/completions" \
+	-H "Content-Type: application/json" \
+	--data '{
+		"model": "meta-llama/Llama-3.1-8B-Instruct",
+		"messages": [
+			{
+				"role": "user",
+				"content": "What is the capital of France?"
+			}
+		]
+	}'
+
+Use Docker images
+
+Copy
+# Deploy with docker on Linux:
+docker run --runtime nvidia --gpus all \
+	--name my_vllm_container \
+	-v ~/.cache/huggingface:/root/.cache/huggingface \
+ 	--env "HUGGING_FACE_HUB_TOKEN=<secret>" \
+	-p 8000:8000 \
+	--ipc=host \
+	vllm/vllm-openai:latest \
+	--model meta-llama/Llama-3.1-8B-Instruct
+
+Copy
+# Load and run the model:
+docker exec -it my_vllm_container bash -c "vllm serve meta-llama/Llama-3.1-8B-Instruct"
+
+Copy
+# Call the server using curl:
+curl -X POST "http://localhost:8000/v1/chat/completions" \
+	-H "Content-Type: application/json" \
+	--data '{
+		"model": "meta-llama/Llama-3.1-8B-Instruct",
+		"messages": [
+			{
+				"role": "user",
+				"content": "What is the capital of France?"
+			}
+		]
+	}'
+
+
+I have permission for this. So yeah. 
+
+
+model 2 - https://huggingface.co/Qwen/Qwen3-4B
+
+Install from pip
+
+Copy
+# Install vLLM from pip:
+pip install vllm
+
+Copy
+# Load and run the model:
+vllm serve "Qwen/Qwen3-4B"
+
+Copy
+# Call the server using curl:
+curl -X POST "http://localhost:8000/v1/chat/completions" \
+	-H "Content-Type: application/json" \
+	--data '{
+		"model": "Qwen/Qwen3-4B",
+		"messages": [
+			{
+				"role": "user",
+				"content": "What is the capital of France?"
+			}
+		]
+	}'
+Use Docker images
+
+Copy
+# Deploy with docker on Linux:
+docker run --runtime nvidia --gpus all \
+	--name my_vllm_container \
+	-v ~/.cache/huggingface:/root/.cache/huggingface \
+ 	--env "HUGGING_FACE_HUB_TOKEN=<secret>" \
+	-p 8000:8000 \
+	--ipc=host \
+	vllm/vllm-openai:latest \
+	--model Qwen/Qwen3-4B
+
+Copy
+# Load and run the model:
+docker exec -it my_vllm_container bash -c "vllm serve Qwen/Qwen3-4B"
+
+Copy
+# Call the server using curl:
+curl -X POST "http://localhost:8000/v1/chat/completions" \
+	-H "Content-Type: application/json" \
+	--data '{
+		"model": "Qwen/Qwen3-4B",
+		"messages": [
+			{
+				"role": "user",
+				"content": "What is the capital of France?"
+			}
+		]
+	}'
+
+
+model 3 - https://huggingface.co/Qwen/Qwen3-32B
+
+Install from pip
+
+Copy
+# Install vLLM from pip:
+pip install vllm
+
+Copy
+# Load and run the model:
+vllm serve "Qwen/Qwen3-32B"
+
+Copy
+# Call the server using curl:
+curl -X POST "http://localhost:8000/v1/chat/completions" \
+	-H "Content-Type: application/json" \
+	--data '{
+		"model": "Qwen/Qwen3-32B",
+		"messages": [
+			{
+				"role": "user",
+				"content": "What is the capital of France?"
+			}
+		]
+	}'
+Use Docker images
+
+Copy
+# Deploy with docker on Linux:
+docker run --runtime nvidia --gpus all \
+	--name my_vllm_container \
+	-v ~/.cache/huggingface:/root/.cache/huggingface \
+ 	--env "HUGGING_FACE_HUB_TOKEN=<secret>" \
+	-p 8000:8000 \
+	--ipc=host \
+	vllm/vllm-openai:latest \
+	--model Qwen/Qwen3-32B
+
+Copy
+# Load and run the model:
+docker exec -it my_vllm_container bash -c "vllm serve Qwen/Qwen3-32B"
+
+Copy
+# Call the server using curl:
+curl -X POST "http://localhost:8000/v1/chat/completions" \
+	-H "Content-Type: application/json" \
+	--data '{
+		"model": "Qwen/Qwen3-32B",
+		"messages": [
+			{
+				"role": "user",
+				"content": "What is the capital of France?"
+			}
+		]
+	}'
