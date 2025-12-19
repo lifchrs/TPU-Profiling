@@ -1,0 +1,21 @@
+{
+  "model": "Qwen/Qwen3-4B",
+  "tp_size": 1,
+  "prompt": "Explain the concept of machine learning in simple terms.",
+  "prompt_length_tokens": 9,
+  "num_tokens_requested": 100,
+  "num_runs": 3,
+  "num_generated_tokens": 100,
+  "ttft_mean_ms": 263.1114674999935,
+  "ttft_min_ms": 262.9241354999522,
+  "ttft_max_ms": 263.4543434999614,
+  "ttft_std_ms": 0.29736439388955405,
+  "tpot_mean_ms": 6.201280378787726,
+  "tpot_min_ms": 6.196865146463519,
+  "tpot_max_ms": 6.2093616313122215,
+  "tpot_std_ms": 0.007008588408171293,
+  "total_time_mean_ms": 877.0382249999784,
+  "throughput_tokens_per_sec": 114.08756114213323,
+  "timestamp": "2025-12-19T04:27:30.269992",
+  "load_time_seconds": 55.49942111968994
+}
