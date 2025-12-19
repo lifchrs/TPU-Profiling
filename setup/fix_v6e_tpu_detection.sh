@@ -111,9 +111,8 @@ sudo docker run -it --rm --name ${USER}-vllm \
     -e TMPDIR='/dev/shm' \
     -e TEMP='/dev/shm' \
     -e TMP='/dev/shm' \
-    --entrypoint /bin/bash \
     ${DOCKER_URI} \
-    -c "export JAX_PLATFORMS='' PJRT_DEVICE='TPU' JAX_FORCE_TPU_INIT='true' TMPDIR='/dev/shm' TEMP='/dev/shm' TMP='/dev/shm' && exec /bin/bash"
+    /bin/bash -c "export JAX_PLATFORMS='' PJRT_DEVICE='TPU' JAX_FORCE_TPU_INIT='true' TMPDIR='/dev/shm' TEMP='/dev/shm' TMP='/dev/shm' && exec /bin/bash"
 DOCKER_SCRIPT
 
 chmod +x /tmp/run_vllm_docker_fixed.sh
