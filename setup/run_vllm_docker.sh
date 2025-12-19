@@ -28,6 +28,12 @@ sudo docker run -it --rm --name ${USER}-vllm \
     -v /dev/shm:/dev/shm \
     --shm-size 150gb \
     -v "${PROJECT_DIR}:/workspace/SysML-Project" \
+    -e JAX_PLATFORMS='' \
+    -e PJRT_DEVICE='TPU' \
+    -e JAX_FORCE_TPU_INIT='true' \
+    -e TMPDIR='/dev/shm' \
+    -e TEMP='/dev/shm' \
+    -e TMP='/dev/shm' \
     -p 8000:8000 \
     --entrypoint /bin/bash \
     ${DOCKER_URI}
