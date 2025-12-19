@@ -81,15 +81,19 @@ echo
 
 # Step 5: Create improved Docker run script
 echo "Step 5: Creating improved Docker run script..."
-cat > /tmp/run_vllm_docker_fixed.sh << 'DOCKER_SCRIPT'
+
+# Get the actual project directory (where this script is located)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ACTUAL_PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+cat > /tmp/run_vllm_docker_fixed.sh << DOCKER_SCRIPT
 #!/bin/bash
 # Improved Docker run with additional TPU detection fixes
 
 export DOCKER_URI="vllm/vllm-tpu:latest"
 
-# Get project directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# Use the actual project directory
+PROJECT_DIR="${ACTUAL_PROJECT_DIR}"
 
 echo "Starting vLLM Docker with v6e TPU fixes..."
 echo
