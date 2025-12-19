@@ -93,11 +93,12 @@ cat > /tmp/run_vllm_docker_fixed.sh << DOCKER_SCRIPT
 export DOCKER_URI="vllm/vllm-tpu:latest"
 
 # Use the actual project directory (default to home directory if not found)
-if [ -d "${ACTUAL_PROJECT_DIR}" ]; then
-    PROJECT_DIR="${ACTUAL_PROJECT_DIR}"
-else
+PROJECT_DIR="${ACTUAL_PROJECT_DIR}"
+if [ ! -d "\${PROJECT_DIR}" ]; then
     PROJECT_DIR="\${HOME}/SysML Project"
 fi
+
+echo "Using project directory: \${PROJECT_DIR}"
 
 echo "Starting vLLM Docker with v6e TPU fixes..."
 echo
