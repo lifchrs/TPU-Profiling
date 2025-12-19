@@ -17,19 +17,13 @@ We wrote a trace collection script that collects all 88 traces in one go while b
 Usage: `python run_all_traces.py <ZONE> <TPU_NAME>`
 eg. `python run_all_traces.py us-east1-d  my-tpu-v6e`                
 
-Running a single script can be done quickly by just setting `MODEL_for model_id in models:
-        safe_model_id = model_id.replace("/", "_")
-        tp_too_small = False
-        for tp_size in tp_sizes:
-
+Running a single script can be done quickly by just setting 
         `models,` `tp_sizes` and `batch_sizes` to arrays with one element, or you can directly SSH into the TPU and run 
 
-        ```
-        export DOCKER_URI=vllm/vllm-tpu:v0.12.0
+    export DOCKER_URI=vllm/vllm-tpu:v0.12.0
         export HF_HOME=/mnt/disks/huggingface/
         sudo docker run -it --rm --name $USER-vllm --privileged --net=host \
         -v /mnt/disks/huggingface:/mnt/disks/huggingface\
     -v /dev/shm:/dev/shm \
     --shm-size 150gb \
     --entrypoint /bin/bash ${DOCKER_URI}
-    ```
